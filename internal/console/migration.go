@@ -42,7 +42,7 @@ func migrateDB(cmd *cobra.Command, args []string) {
 	}
 	defer connDB.Close()
 
-	migrations := &migrate.FileMigrationSource{Dir: "./db/migrations"}
+	migrations := &migrate.FileMigrationSource{Dir: "./database/migrations"}
 
 	var n int
 	if direction == "down" {
