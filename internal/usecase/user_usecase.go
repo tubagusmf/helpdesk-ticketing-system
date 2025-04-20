@@ -10,15 +10,13 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
-	"github.com/tubagusmf/ecommerce-user-product-service/pb/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var v = validator.New()
 
 type UserUsecase struct {
-	userRepo   model.IUserRepository
-	userClient user.UserServiceClient
+	userRepo model.IUserRepository
 }
 
 func NewUserUsecase(
