@@ -29,6 +29,7 @@ type Ticket struct {
 	Priority    string     `json:"priority"`
 	AssignedTo  int64      `json:"assigned_to"`
 	UserID      int64      `json:"user_id"`
+	DueBy       *time.Time `json:"due_by,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	DeletedAt   *time.Time `json:"-"`

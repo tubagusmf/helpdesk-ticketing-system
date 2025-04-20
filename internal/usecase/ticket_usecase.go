@@ -5,6 +5,7 @@ import (
 	"errors"
 	"helpdesk-ticketing-system/internal/helper"
 	"helpdesk-ticketing-system/internal/model"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -68,6 +69,23 @@ func (t *TicketUsecase) Create(ctx context.Context, in model.CreateTicketInput) 
 		return &model.Ticket{}, err
 	}
 
+	var duration time.Duration
+	switch strings.ToLower(in.Priority) {
+	case "high":
+		duration = 60 * time.Minute
+	case "medium":
+		duration = 90 * time.Minute
+	case "low":
+		duration = 120 * time.Minute
+	case "very_low":
+		duration = 240 * time.Minute
+	default:
+		duration = 120 * time.Minute
+	}
+
+	now := time.Now()
+	dueBy := now.Add(duration)
+
 	ticket := model.Ticket{
 		Title:       in.Title,
 		Description: in.Description,
@@ -75,6 +93,7 @@ func (t *TicketUsecase) Create(ctx context.Context, in model.CreateTicketInput) 
 		Priority:    in.Priority,
 		AssignedTo:  in.AssignedTo,
 		UserID:      userID,
+		DueBy:       &dueBy,
 	}
 
 	tickets, err := t.ticketRepo.Create(ctx, ticket)
@@ -98,6 +117,12 @@ func (t *TicketUsecase) Update(ctx context.Context, id int64, in model.UpdateTic
 		return &model.Ticket{}, err
 	}
 
+	userID, err := helper.GetUserID(ctx)
+	if err != nil {
+		log.Error("Failed to get user ID: ", err)
+		return &model.Ticket{}, err
+	}
+
 	exitingTicket, err := t.ticketRepo.FindById(ctx, id)
 	if err != nil {
 		log.Error("Failed to fetch ticket: ", err)
@@ -115,6 +140,8 @@ func (t *TicketUsecase) Update(ctx context.Context, id int64, in model.UpdateTic
 		ticket.Status = input.Status
 		ticket.Priority = input.Priority
 		ticket.AssignedTo = input.AssignedTo
+		ticket.UserID = userID
+		ticket.DueBy = helper.CalculateDueBy(input.Priority)
 		ticket.UpdatedAt = time.Now()
 	}(exitingTicket, in)
 
