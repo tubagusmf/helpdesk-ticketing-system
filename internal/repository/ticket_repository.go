@@ -38,7 +38,7 @@ func (t *TaskRepo) FindAll(ctx context.Context, filter model.FindAllParam) ([]*m
 
 func (t *TaskRepo) FindById(ctx context.Context, id int64) (*model.Ticket, error) {
 	var ticket model.Ticket
-	err := t.db.WithContext(ctx).Where("id = ?", id).First(&ticket).Error
+	err := t.db.WithContext(ctx).Where("deleted_at IS NULL").First(&ticket, id).Preload("Comments").Error
 
 	if err != nil {
 		return nil, err
