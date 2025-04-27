@@ -50,6 +50,11 @@ type User struct {
 	DeletedAt *time.Time `json:"-"`
 }
 
+type UserResponse struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 type UserSession struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`

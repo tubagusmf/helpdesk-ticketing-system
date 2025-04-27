@@ -41,10 +41,10 @@ func httpServer(cmd *cobra.Command, args []string) {
 
 	userRepo := repository.NewUserRepo(postgresDB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
-	ticketRepo := repository.NewTicketRepo(postgresDB)
-	ticketUsecase := usecase.NewTicketUsecase(ticketRepo)
 	commentRepo := repository.NewCommentRepo(postgresDB)
 	commentUsecase := usecase.NewCommentUsecase(commentRepo)
+	ticketRepo := repository.NewTicketRepo(postgresDB)
+	ticketUsecase := usecase.NewTicketUsecase(ticketRepo, userRepo, commentRepo)
 
 	e := echo.New()
 

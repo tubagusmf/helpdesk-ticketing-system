@@ -11,14 +11,20 @@ import (
 )
 
 type TicketUsecase struct {
-	ticketRepo model.ITicketRepository
+	ticketRepo  model.ITicketRepository
+	userRepo    model.IUserRepository
+	commentRepo model.ICommentRepository
 }
 
-func NewTicketUsecase(ticketRepo model.ITicketRepository) model.ITicketUsecase {
-	return &TicketUsecase{ticketRepo: ticketRepo}
+func NewTicketUsecase(ticketRepo model.ITicketRepository, userRepo model.IUserRepository, commentRepo model.ICommentRepository) model.ITicketUsecase {
+	return &TicketUsecase{
+		ticketRepo:  ticketRepo,
+		userRepo:    userRepo,
+		commentRepo: commentRepo,
+	}
 }
 
-func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) ([]*model.Ticket, error) {
+func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) ([]*model.TicketResponse, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"filter": filter,
 	})
@@ -29,10 +35,50 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 		return nil, err
 	}
 
-	return tickets, nil
+	var responses []*model.TicketResponse
+
+	for _, ticket := range tickets {
+		user, _ := t.userRepo.FindById(ctx, ticket.UserID)
+		comments, _ := t.commentRepo.FindAllByTicketID(ctx, ticket.ID)
+
+		var userRes *model.UserResponse
+		if user != nil {
+			userRes = &model.UserResponse{
+				Name:  user.Name,
+				Email: user.Email,
+			}
+		}
+
+		var commentResList []*model.CommentResponse
+		for _, comment := range comments {
+			commentResList = append(commentResList, &model.CommentResponse{
+				UserID:  comment.UserID,
+				Content: comment.Content,
+			})
+		}
+
+		response := &model.TicketResponse{
+			ID:          ticket.ID,
+			Title:       ticket.Title,
+			Description: ticket.Description,
+			Status:      ticket.Status,
+			Priority:    ticket.Priority,
+			AssignedTo:  ticket.AssignedTo,
+			UserID:      ticket.UserID,
+			User:        userRes,
+			Comment:     commentResList,
+			DueBy:       ticket.DueBy,
+			CreatedAt:   ticket.CreatedAt,
+			UpdatedAt:   ticket.UpdatedAt,
+		}
+
+		responses = append(responses, response)
+	}
+
+	return responses, nil
 }
 
-func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.Ticket, error) {
+func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketResponse, error) {
 	log := logrus.WithFields(logrus.Fields{
 		"id": id,
 	})
@@ -48,7 +94,41 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.Ticket, 
 		return nil, errors.New("ticket not found")
 	}
 
-	return ticket, nil
+	user, _ := t.userRepo.FindById(ctx, ticket.UserID)
+	comments, _ := t.commentRepo.FindAllByTicketID(ctx, ticket.ID)
+
+	var userRes *model.UserResponse
+	if user != nil {
+		userRes = &model.UserResponse{
+			Name:  user.Name,
+			Email: user.Email,
+		}
+	}
+
+	var commentResList []*model.CommentResponse
+	for _, comment := range comments {
+		commentResList = append(commentResList, &model.CommentResponse{
+			UserID:  comment.UserID,
+			Content: comment.Content,
+		})
+	}
+
+	response := &model.TicketResponse{
+		ID:          ticket.ID,
+		Title:       ticket.Title,
+		Description: ticket.Description,
+		Status:      ticket.Status,
+		Priority:    ticket.Priority,
+		AssignedTo:  ticket.AssignedTo,
+		UserID:      ticket.UserID,
+		User:        userRes,
+		Comment:     commentResList,
+		DueBy:       ticket.DueBy,
+		CreatedAt:   ticket.CreatedAt,
+		UpdatedAt:   ticket.UpdatedAt,
+	}
+
+	return response, nil
 }
 
 func (t *TicketUsecase) Create(ctx context.Context, in model.CreateTicketInput) (*model.Ticket, error) {

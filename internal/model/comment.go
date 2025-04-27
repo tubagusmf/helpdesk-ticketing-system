@@ -15,6 +15,11 @@ type Comment struct {
 	DeletedAt *time.Time `json:"-"`
 }
 
+type CommentResponse struct {
+	UserID  int64  `json:"user_id"`
+	Content string `json:"content"`
+}
+
 type CreateCommentInput struct {
 	TicketId int64  `json:"ticket_id" validate:"required"`
 	Content  string `json:"content" validate:"required"`
@@ -28,6 +33,7 @@ type UpdateCommentInput struct {
 type ICommentRepository interface {
 	FindAll(ctx context.Context, comment Comment) ([]*Comment, error)
 	FindById(ctx context.Context, id int64) (*Comment, error)
+	FindAllByTicketID(ctx context.Context, ticketID int64) ([]*Comment, error)
 	Create(ctx context.Context, comment Comment) (*Comment, error)
 	Update(ctx context.Context, comment Comment) (*Comment, error)
 	Delete(ctx context.Context, id int64) error

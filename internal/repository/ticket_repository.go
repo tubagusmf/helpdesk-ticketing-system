@@ -16,8 +16,8 @@ func NewTicketRepo(db *gorm.DB) model.ITicketRepository {
 	return &TaskRepo{db: db}
 }
 
-func (t *TaskRepo) FindAll(ctx context.Context, filter model.FindAllParam) ([]*model.Ticket, error) {
-	var ticket []*model.Ticket
+func (t *TaskRepo) FindAll(ctx context.Context, filter model.FindAllParam) ([]*model.TicketResponse, error) {
+	var ticket []*model.TicketResponse
 	query := t.db.WithContext(ctx).Model(&model.Ticket{})
 
 	if filter.Limit > 0 {

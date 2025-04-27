@@ -39,6 +39,16 @@ func (c *CommentRepo) FindById(ctx context.Context, id int64) (*model.Comment, e
 	return &comment, nil
 }
 
+func (c *CommentRepo) FindAllByTicketID(ctx context.Context, ticketID int64) ([]*model.Comment, error) {
+	var comments []*model.Comment
+
+	err := c.db.WithContext(ctx).Where("ticket_id = ?", ticketID).Order("created_at ASC").Find(&comments).Error
+	if err != nil {
+		return nil, err
+	}
+	return comments, nil
+}
+
 func (c *CommentRepo) Create(ctx context.Context, comment model.Comment) (*model.Comment, error) {
 	err := c.db.WithContext(ctx).Create(&comment).Error
 	if err != nil {

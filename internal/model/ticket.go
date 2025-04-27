@@ -6,7 +6,7 @@ import (
 )
 
 type ITicketRepository interface {
-	FindAll(ctx context.Context, filter FindAllParam) ([]*Ticket, error)
+	FindAll(ctx context.Context, filter FindAllParam) ([]*TicketResponse, error)
 	FindById(ctx context.Context, id int64) (*Ticket, error)
 	Create(ctx context.Context, ticket Ticket) (*Ticket, error)
 	Update(ctx context.Context, ticket Ticket) (*Ticket, error)
@@ -14,8 +14,8 @@ type ITicketRepository interface {
 }
 
 type ITicketUsecase interface {
-	FindAll(ctx context.Context, filter FindAllParam) ([]*Ticket, error)
-	FindById(ctx context.Context, id int64) (*Ticket, error)
+	FindAll(ctx context.Context, filter FindAllParam) ([]*TicketResponse, error)
+	FindById(ctx context.Context, id int64) (*TicketResponse, error)
 	Create(ctx context.Context, in CreateTicketInput) (*Ticket, error)
 	Update(ctx context.Context, id int64, in UpdateTicketInput) (*Ticket, error)
 	Delete(ctx context.Context, id int64) error
@@ -33,6 +33,21 @@ type Ticket struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	DeletedAt   *time.Time `json:"-"`
+}
+
+type TicketResponse struct {
+	ID          int64              `json:"id"`
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
+	Status      string             `json:"status"`
+	Priority    string             `json:"priority"`
+	AssignedTo  int64              `json:"assigned_to"`
+	UserID      int64              `json:"user_id"`
+	User        *UserResponse      `json:"user,omitempty"`
+	Comment     []*CommentResponse `json:"comment,omitempty"`
+	DueBy       *time.Time         `json:"due_by,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
 type FindAllParam struct {
