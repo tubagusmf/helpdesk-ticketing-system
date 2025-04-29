@@ -11,16 +11,18 @@ import (
 )
 
 type TicketUsecase struct {
-	ticketRepo  model.ITicketRepository
-	userRepo    model.IUserRepository
-	commentRepo model.ICommentRepository
+	ticketRepo     model.ITicketRepository
+	userRepo       model.IUserRepository
+	commentRepo    model.ICommentRepository
+	attachmentRepo model.IAttachmentRepository
 }
 
-func NewTicketUsecase(ticketRepo model.ITicketRepository, userRepo model.IUserRepository, commentRepo model.ICommentRepository) model.ITicketUsecase {
+func NewTicketUsecase(ticketRepo model.ITicketRepository, userRepo model.IUserRepository, commentRepo model.ICommentRepository, attachmentRepo model.IAttachmentRepository) model.ITicketUsecase {
 	return &TicketUsecase{
-		ticketRepo:  ticketRepo,
-		userRepo:    userRepo,
-		commentRepo: commentRepo,
+		ticketRepo:     ticketRepo,
+		userRepo:       userRepo,
+		commentRepo:    commentRepo,
+		attachmentRepo: attachmentRepo,
 	}
 }
 
@@ -40,6 +42,7 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 	for _, ticket := range tickets {
 		user, _ := t.userRepo.FindById(ctx, ticket.UserID)
 		comments, _ := t.commentRepo.FindAllByTicketID(ctx, ticket.ID)
+		attachments, _ := t.attachmentRepo.FindAllByTicketID(ctx, ticket.ID)
 
 		var userRes *model.UserResponse
 		if user != nil {
@@ -57,6 +60,13 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 			})
 		}
 
+		var attachmentResList []*model.AttachmentResponse
+		for _, attachment := range attachments {
+			attachmentResList = append(attachmentResList, &model.AttachmentResponse{
+				FilePath: attachment.FilePath,
+			})
+		}
+
 		response := &model.TicketResponse{
 			ID:          ticket.ID,
 			Title:       ticket.Title,
@@ -67,6 +77,7 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 			UserID:      ticket.UserID,
 			User:        userRes,
 			Comment:     commentResList,
+			Attachment:  attachmentResList,
 			DueBy:       ticket.DueBy,
 			CreatedAt:   ticket.CreatedAt,
 			UpdatedAt:   ticket.UpdatedAt,

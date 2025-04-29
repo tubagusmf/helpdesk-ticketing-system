@@ -43,14 +43,17 @@ func httpServer(cmd *cobra.Command, args []string) {
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	commentRepo := repository.NewCommentRepo(postgresDB)
 	commentUsecase := usecase.NewCommentUsecase(commentRepo)
+	attachmentRepo := repository.NewAttachmentRepo(postgresDB)
+	attachmentUsecase := usecase.NewAttachmentUsecase(attachmentRepo)
 	ticketRepo := repository.NewTicketRepo(postgresDB)
-	ticketUsecase := usecase.NewTicketUsecase(ticketRepo, userRepo, commentRepo)
+	ticketUsecase := usecase.NewTicketUsecase(ticketRepo, userRepo, commentRepo, attachmentRepo)
 
 	e := echo.New()
 
 	handlerHttp.NewUserHandler(e, userUsecase)
 	handlerHttp.NewTicketHandler(e, ticketUsecase)
 	handlerHttp.NewCommentHandler(e, commentUsecase)
+	handlerHttp.NewAttachmentHandler(e, attachmentUsecase)
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, 2)
