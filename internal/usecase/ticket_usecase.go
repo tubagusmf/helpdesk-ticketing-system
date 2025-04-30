@@ -107,6 +107,7 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketRe
 
 	user, _ := t.userRepo.FindById(ctx, ticket.UserID)
 	comments, _ := t.commentRepo.FindAllByTicketID(ctx, ticket.ID)
+	attachments, _ := t.attachmentRepo.FindAllByTicketID(ctx, ticket.ID)
 
 	var userRes *model.UserResponse
 	if user != nil {
@@ -124,6 +125,13 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketRe
 		})
 	}
 
+	var attachmentResList []*model.AttachmentResponse
+	for _, attachment := range attachments {
+		attachmentResList = append(attachmentResList, &model.AttachmentResponse{
+			FilePath: attachment.FilePath,
+		})
+	}
+
 	response := &model.TicketResponse{
 		ID:          ticket.ID,
 		Title:       ticket.Title,
@@ -132,6 +140,7 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketRe
 		Priority:    ticket.Priority,
 		AssignedTo:  ticket.AssignedTo,
 		UserID:      ticket.UserID,
+		Attachment:  attachmentResList,
 		User:        userRes,
 		Comment:     commentResList,
 		DueBy:       ticket.DueBy,
