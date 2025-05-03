@@ -19,6 +19,11 @@ type AttachmentResponse struct {
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
+type AttachmentResponseForTicket struct {
+	FilePath   string    `json:"file_path"`
+	UploadedAt time.Time `json:"uploaded_at"`
+}
+
 type CreateAttachmentInput struct {
 	TicketID int64  `json:"ticket_id" validate:"required"`
 	FilePath string `json:"file_path" validate:"required"`

@@ -60,11 +60,21 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 			})
 		}
 
-		var attachmentResList []*model.AttachmentResponse
+		var attachmentResList []*model.AttachmentResponseForTicket
 		for _, attachment := range attachments {
-			attachmentResList = append(attachmentResList, &model.AttachmentResponse{
-				FilePath: attachment.FilePath,
+			attachmentResList = append(attachmentResList, &model.AttachmentResponseForTicket{
+				FilePath:   attachment.FilePath,
+				UploadedAt: attachment.UploadedAt,
 			})
+		}
+
+		penalty := false
+		var overdueBy string
+
+		if (ticket.Status == "open" || ticket.Status == "in_progress") && time.Now().After(*ticket.DueBy) {
+			penalty = true
+			overdueDuration := time.Since(*ticket.DueBy)
+			overdueBy = helper.FormatDuration(overdueDuration)
 		}
 
 		response := &model.TicketResponse{
@@ -81,6 +91,8 @@ func (t *TicketUsecase) FindAll(ctx context.Context, filter model.FindAllParam) 
 			DueBy:       ticket.DueBy,
 			CreatedAt:   ticket.CreatedAt,
 			UpdatedAt:   ticket.UpdatedAt,
+			Penalty:     penalty,
+			Overdueby:   overdueBy,
 		}
 
 		responses = append(responses, response)
@@ -125,11 +137,21 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketRe
 		})
 	}
 
-	var attachmentResList []*model.AttachmentResponse
+	var attachmentResList []*model.AttachmentResponseForTicket
 	for _, attachment := range attachments {
-		attachmentResList = append(attachmentResList, &model.AttachmentResponse{
-			FilePath: attachment.FilePath,
+		attachmentResList = append(attachmentResList, &model.AttachmentResponseForTicket{
+			FilePath:   attachment.FilePath,
+			UploadedAt: attachment.UploadedAt,
 		})
+	}
+
+	penalty := false
+	var overdueBy string
+
+	if (ticket.Status == "open" || ticket.Status == "in_progress") && time.Now().After(*ticket.DueBy) {
+		penalty = true
+		overdueDuration := time.Since(*ticket.DueBy)
+		overdueBy = helper.FormatDuration(overdueDuration)
 	}
 
 	response := &model.TicketResponse{
@@ -146,6 +168,8 @@ func (t *TicketUsecase) FindById(ctx context.Context, id int64) (*model.TicketRe
 		DueBy:       ticket.DueBy,
 		CreatedAt:   ticket.CreatedAt,
 		UpdatedAt:   ticket.UpdatedAt,
+		Penalty:     penalty,
+		Overdueby:   overdueBy,
 	}
 
 	return response, nil

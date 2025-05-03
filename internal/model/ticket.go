@@ -36,19 +36,21 @@ type Ticket struct {
 }
 
 type TicketResponse struct {
-	ID          int64                 `json:"id"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	Status      string                `json:"status"`
-	Priority    string                `json:"priority"`
-	AssignedTo  int64                 `json:"assigned_to"`
-	UserID      int64                 `json:"user_id"`
-	User        *UserResponse         `json:"user,omitempty"`
-	Comment     []*CommentResponse    `json:"comment,omitempty"`
-	Attachment  []*AttachmentResponse `json:"attachment,omitempty"`
-	DueBy       *time.Time            `json:"due_by,omitempty"`
-	CreatedAt   time.Time             `json:"created_at"`
-	UpdatedAt   time.Time             `json:"updated_at"`
+	ID          int64                          `json:"id"`
+	Title       string                         `json:"title"`
+	Description string                         `json:"description"`
+	Status      string                         `json:"status"`
+	Priority    string                         `json:"priority"`
+	AssignedTo  int64                          `json:"assigned_to"`
+	UserID      int64                          `json:"user_id"`
+	User        *UserResponse                  `json:"user,omitempty"`
+	Comment     []*CommentResponse             `json:"comment,omitempty"`
+	Attachment  []*AttachmentResponseForTicket `json:"attachment,omitempty"`
+	DueBy       *time.Time                     `json:"due_by,omitempty"`
+	CreatedAt   time.Time                      `json:"created_at"`
+	UpdatedAt   time.Time                      `json:"updated_at"`
+	Penalty     bool                           `json:"penalty"`
+	Overdueby   string                         `json:"overdue_by,omitempty"`
 }
 
 type FindAllParam struct {
