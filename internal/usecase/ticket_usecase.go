@@ -11,18 +11,26 @@ import (
 )
 
 type TicketUsecase struct {
-	ticketRepo     model.ITicketRepository
-	userRepo       model.IUserRepository
-	commentRepo    model.ICommentRepository
-	attachmentRepo model.IAttachmentRepository
+	ticketRepo        model.ITicketRepository
+	userRepo          model.IUserRepository
+	commentRepo       model.ICommentRepository
+	attachmentRepo    model.IAttachmentRepository
+	ticketHistoryRepo model.ITicketHistoryRepository
 }
 
-func NewTicketUsecase(ticketRepo model.ITicketRepository, userRepo model.IUserRepository, commentRepo model.ICommentRepository, attachmentRepo model.IAttachmentRepository) model.ITicketUsecase {
+func NewTicketUsecase(
+	ticketRepo model.ITicketRepository,
+	userRepo model.IUserRepository,
+	commentRepo model.ICommentRepository,
+	attachmentRepo model.IAttachmentRepository,
+	ticketHistoryRepo model.ITicketHistoryRepository,
+) model.ITicketUsecase {
 	return &TicketUsecase{
-		ticketRepo:     ticketRepo,
-		userRepo:       userRepo,
-		commentRepo:    commentRepo,
-		attachmentRepo: attachmentRepo,
+		ticketRepo:        ticketRepo,
+		userRepo:          userRepo,
+		commentRepo:       commentRepo,
+		attachmentRepo:    attachmentRepo,
+		ticketHistoryRepo: ticketHistoryRepo,
 	}
 }
 
@@ -208,6 +216,19 @@ func (t *TicketUsecase) Create(ctx context.Context, in model.CreateTicketInput) 
 		return &model.Ticket{}, err
 	}
 
+	ticketHistory := model.TicketHistory{
+		TicketID:  tickets.ID,
+		UserID:    userID,
+		Status:    tickets.Status,
+		Priority:  tickets.Priority,
+		ChangedAt: time.Now(),
+	}
+
+	err = t.ticketHistoryRepo.Create(ctx, ticketHistory)
+	if err != nil {
+		return nil, err
+	}
+
 	return tickets, nil
 }
 
@@ -255,6 +276,18 @@ func (t *TicketUsecase) Update(ctx context.Context, id int64, in model.UpdateTic
 	if err != nil {
 		log.Error("Failed to update ticket: ", err)
 		return &model.Ticket{}, err
+	}
+
+	ticketHistory := model.TicketHistory{
+		TicketID:  tickets.ID,
+		UserID:    tickets.UserID,
+		Status:    tickets.Status,
+		Priority:  tickets.Priority,
+		ChangedAt: time.Now(),
+	}
+	err = t.ticketHistoryRepo.Create(ctx, ticketHistory)
+	if err != nil {
+		return nil, err
 	}
 
 	return tickets, nil
