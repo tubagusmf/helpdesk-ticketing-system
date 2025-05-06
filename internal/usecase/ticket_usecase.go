@@ -3,19 +3,23 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"helpdesk-ticketing-system/internal/helper"
 	"helpdesk-ticketing-system/internal/model"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 )
 
 type TicketUsecase struct {
-	ticketRepo        model.ITicketRepository
-	userRepo          model.IUserRepository
-	commentRepo       model.ICommentRepository
-	attachmentRepo    model.IAttachmentRepository
-	ticketHistoryRepo model.ITicketHistoryRepository
+	ticketRepo          model.ITicketRepository
+	userRepo            model.IUserRepository
+	commentRepo         model.ICommentRepository
+	attachmentRepo      model.IAttachmentRepository
+	ticketHistoryRepo   model.ITicketHistoryRepository
+	notificationUsecase model.INotificationUsecase
+	rmq                 *amqp.Channel
 }
 
 func NewTicketUsecase(
@@ -24,13 +28,17 @@ func NewTicketUsecase(
 	commentRepo model.ICommentRepository,
 	attachmentRepo model.IAttachmentRepository,
 	ticketHistoryRepo model.ITicketHistoryRepository,
+	notificationUsecase model.INotificationUsecase,
+	rmq *amqp.Channel,
 ) model.ITicketUsecase {
 	return &TicketUsecase{
-		ticketRepo:        ticketRepo,
-		userRepo:          userRepo,
-		commentRepo:       commentRepo,
-		attachmentRepo:    attachmentRepo,
-		ticketHistoryRepo: ticketHistoryRepo,
+		ticketRepo:          ticketRepo,
+		userRepo:            userRepo,
+		commentRepo:         commentRepo,
+		attachmentRepo:      attachmentRepo,
+		ticketHistoryRepo:   ticketHistoryRepo,
+		notificationUsecase: notificationUsecase,
+		rmq:                 rmq,
 	}
 }
 
@@ -214,6 +222,28 @@ func (t *TicketUsecase) Create(ctx context.Context, in model.CreateTicketInput) 
 	if err != nil {
 		log.Error("Failed to create ticket: ", err)
 		return &model.Ticket{}, err
+	}
+
+	assignedUser, err := t.userRepo.FindById(ctx, in.AssignedTo)
+	if err != nil {
+		log.Error("Failed to fetch assigned user: ", err)
+		return nil, fmt.Errorf("failed to fetch assigned user")
+	}
+
+	notification := model.Notification{
+		UserID:    assignedUser.ID,
+		Email:     assignedUser.Email,
+		Subject:   tickets.Title,
+		Message:   tickets.Description,
+		Status:    "pending",
+		TicketID:  tickets.ID,
+		CreatedAt: time.Now(),
+	}
+
+	err = t.notificationUsecase.SendNotification(ctx, &notification)
+	if err != nil {
+		log.Warn("Failed to send notification: ", err)
+		return nil, err
 	}
 
 	ticketHistory := model.TicketHistory{

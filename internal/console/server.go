@@ -14,6 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"helpdesk-ticketing-system/internal/worker"
+
 	handlerHttp "helpdesk-ticketing-system/internal/delivery/http"
 )
 
@@ -30,6 +32,7 @@ var serverCMD = &cobra.Command{
 
 func httpServer(cmd *cobra.Command, args []string) {
 	config.LoadWithViper()
+	config.LoadWithGetenv()
 
 	postgresDB := database.NewPostgres()
 	sqlDB, err := postgresDB.DB()
@@ -39,6 +42,14 @@ func httpServer(cmd *cobra.Command, args []string) {
 
 	defer sqlDB.Close()
 
+	rmqChannel, err := config.InitRabbitMQ()
+	if err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ channel: %v", err)
+	}
+	defer rmqChannel.Close()
+
+	worker.StartEmailWorker(rmqChannel)
+
 	userRepo := repository.NewUserRepo(postgresDB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	commentRepo := repository.NewCommentRepo(postgresDB)
@@ -47,8 +58,17 @@ func httpServer(cmd *cobra.Command, args []string) {
 	attachmentUsecase := usecase.NewAttachmentUsecase(attachmentRepo)
 	ticketHistoryRepo := repository.NewTicketHistoryRepo(postgresDB)
 	ticketHistoryUsecase := usecase.NewTicketHistoryUsecase(ticketHistoryRepo)
+	notificationRepo := repository.NewNotificationRepo(postgresDB)
+	notificationUsecase := usecase.NewNotificationUsecase(notificationRepo, rmqChannel)
 	ticketRepo := repository.NewTicketRepo(postgresDB)
-	ticketUsecase := usecase.NewTicketUsecase(ticketRepo, userRepo, commentRepo, attachmentRepo, ticketHistoryRepo)
+	ticketUsecase := usecase.NewTicketUsecase(
+		ticketRepo,
+		userRepo,
+		commentRepo,
+		attachmentRepo,
+		ticketHistoryRepo, notificationUsecase,
+		rmqChannel,
+	)
 
 	e := echo.New()
 
@@ -57,22 +77,29 @@ func httpServer(cmd *cobra.Command, args []string) {
 	handlerHttp.NewCommentHandler(e, commentUsecase)
 	handlerHttp.NewAttachmentHandler(e, attachmentUsecase)
 	handlerHttp.NewTicketHistoryHandler(e, ticketHistoryUsecase)
+	handlerHttp.NewNotificationHandler(e, notificationUsecase)
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, 2)
-	wg.Add(2)
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		worker.StartEmailWorker(rmqChannel)
+
+		select {}
+	}()
+
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		errCh <- e.Start(":3000")
 	}()
 
 	go func() {
-		defer wg.Done()
-		<-errCh
+		wg.Wait()
+		close(errCh)
 	}()
-
-	wg.Wait()
 
 	if err := <-errCh; err != nil {
 		if err != http.ErrServerClosed {
