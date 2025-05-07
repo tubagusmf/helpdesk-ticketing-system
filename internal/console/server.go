@@ -39,8 +39,10 @@ func httpServer(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to get SQL DB from Gorm: %v", err)
 	}
-
 	defer sqlDB.Close()
+
+	redis := database.NewRedis()
+	defer redis.Close()
 
 	rmqChannel, err := config.InitRabbitMQ()
 	if err != nil {
@@ -60,7 +62,7 @@ func httpServer(cmd *cobra.Command, args []string) {
 	ticketHistoryUsecase := usecase.NewTicketHistoryUsecase(ticketHistoryRepo)
 	notificationRepo := repository.NewNotificationRepo(postgresDB)
 	notificationUsecase := usecase.NewNotificationUsecase(notificationRepo, rmqChannel)
-	ticketRepo := repository.NewTicketRepo(postgresDB)
+	ticketRepo := repository.NewTicketRepo(postgresDB, redis)
 	ticketUsecase := usecase.NewTicketUsecase(
 		ticketRepo,
 		userRepo,
