@@ -44,6 +44,8 @@ func httpServer(cmd *cobra.Command, args []string) {
 	redis := database.NewRedis()
 	defer redis.Close()
 
+	esClient := config.NewClient()
+
 	rmqChannel, err := config.InitRabbitMQ()
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ channel: %v", err)
@@ -58,7 +60,7 @@ func httpServer(cmd *cobra.Command, args []string) {
 	commentUsecase := usecase.NewCommentUsecase(commentRepo)
 	attachmentRepo := repository.NewAttachmentRepo(postgresDB)
 	attachmentUsecase := usecase.NewAttachmentUsecase(attachmentRepo)
-	ticketHistoryRepo := repository.NewTicketHistoryRepo(postgresDB)
+	ticketHistoryRepo := repository.NewTicketHistoryRepo(postgresDB, esClient)
 	ticketHistoryUsecase := usecase.NewTicketHistoryUsecase(ticketHistoryRepo)
 	notificationRepo := repository.NewNotificationRepo(postgresDB)
 	notificationUsecase := usecase.NewNotificationUsecase(notificationRepo, rmqChannel)
